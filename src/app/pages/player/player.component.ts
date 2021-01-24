@@ -1,4 +1,7 @@
 import { Component, OnInit } from '@angular/core';
+import { AudioService } from "../../services/audio.service";
+import { CloudService } from "../../services/cloud.service";
+import { StreamState } from "../../interfaces/stream-state";
 
 @Component({
   selector: 'app-player',
@@ -6,35 +9,78 @@ import { Component, OnInit } from '@angular/core';
   styleUrls: ['./player.component.scss']
 })
 export class PlayerComponent {
-  files: Array<any> = [
-    { name: "First Song", artist: "Inder" },
-    { name: "Second Song", artist: "You" }
-  ];
-  state;
+  // files: Array<any> = [
+  //   { name: "First Song", artist: "Inder" },
+  //   { name: "Second Song", artist: "You" }
+  // ];
+  // state;
+  // currentFile: any = {};
+
+  files: Array<any> = [];
+  state: StreamState | undefined;
   currentFile: any = {};
 
-  isFirstPlaying() {
-    return false;
+  constructor(
+    public audioService: AudioService,
+    public cloudService: CloudService
+  ) {
+    // get media files
+    cloudService.getFiles().subscribe(files => {
+      this.files = files;
+    });
+
+    // listen to stream state
+    this.audioService.getState().subscribe(state => {
+      this.state = state;
+    });
   }
-  isLastPlaying() {
-    return true;
+
+
+  playStream(url) {
+    this.audioService.playStream(url).subscribe(events => {
+      // listening for fun here
+    });
   }
-  openFile() {
-    return;
+    openFile(file, index) {
+      this.currentFile = { index, file };
+      this.audioService.stop();
+      this.playStream(file.url);
+    }
+
+    pause() {
+      this.audioService.pause();
+    }
+
+    play() {
+      this.audioService.play();
+    }
+
+    stop() {
+      this.audioService.stop();
+    }
+
+    next() {
+      const index = this.currentFile.index + 1;
+      const file = this.files[index];
+      this.openFile(file, index);
+    }
+
+    previous() {
+      const index = this.currentFile.index - 1;
+      const file = this.files[index];
+      this.openFile(file, index);
+    }
+
+    isFirstPlaying() {
+      return this.currentFile.index === 0;
+    }
+  
+    isLastPlaying() {
+      return this.currentFile.index === this.files.length - 1;
+    }
+
+    onSliderChangeEnd(change) {
+      this.audioService.seekTo(change.value);
+    }
   }
-  onSliderChangeEnd() {
-    return;
-  }
-  previous() {
-    return;
-  }
-  play() {
-    return;
-  }
-  pause() {
-    return;
-  }
-  next() {
-    return;
-  }
-}
+
